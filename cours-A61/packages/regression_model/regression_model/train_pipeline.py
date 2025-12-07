@@ -1,4 +1,5 @@
 ## train_pipeline.py ##
+
 import pathlib
 from typing import List
 
@@ -6,20 +7,26 @@ import joblib
 import pandas as pd
 
 from regression_model.pipeline import price_pipe, PIPELINE_NAME
+from regression_model import logger, __version__   # notre logger global et la version du modèle
 
-# Où se trouvent les choses sur notre machine #
+# --- Chemins des dossiers ---
+# Où se trouve notre projet
 PACKAGE_ROOT = pathlib.Path(__file__).resolve().parent
-TRAINED_MODEL_DIR = PACKAGE_ROOT / "trained_models"   # Dossier pour stocker les modèles finaux
-DATASET_DIR = PACKAGE_ROOT / "datasets"              # Dossier avec nos jeux de données
+# Où on rangera les modèles une fois entraînés
+TRAINED_MODEL_DIR = PACKAGE_ROOT / "trained_models"
+# Où sont stockées nos données
+DATASET_DIR = PACKAGE_ROOT / "datasets"
 
-# Les fichiers de données qu'on va utiliser #
-TESTING_DATA_FILE = DATASET_DIR / "test.csv"    # Données pour tester plus tard
-TRAINING_DATA_FILE = DATASET_DIR / "train.csv"  # Données pour l'entraînement
+# --- Fichiers de données ---
+# Les données pour tester le modèle (plus tard)
+TESTING_DATA_FILE = DATASET_DIR / "test.csv"
+# Les données pour entraîner le modèle (maintenant)
+TRAINING_DATA_FILE = DATASET_DIR / "train.csv"
 
-# Notre objectif : prédire le prix de vente
+# Ce qu'on veut prédire : le prix de vente des maisons
 TARGET = "SalePrice"
 
-# Toutes les caractéristiques des maisons qu'on prend en compte pour la prédiction #
+# Toutes les caractéristiques qu'on utilise pour faire nos prédictions
 FEATURES: List[str] = [
     "MSSubClass",
     "MSZoning",
@@ -104,35 +111,42 @@ FEATURES: List[str] = [
 
 
 def save_pipeline(pipeline_to_persist) -> None:
-    ## On Prend le pipeline tout entraîné et on le met de côté sur le disque pour pouvoir le réutiliser.###
-    # On s'assure que le dossier existe, sinon on le crée
+    """Prend le modèle entraîné et le sauvegarde sur le disque pour plus tard."""
+    # On s'assure que le dossier existe (on le crée si besoin)
     TRAINED_MODEL_DIR.mkdir(exist_ok=True)
-    
-    # On choisit un nom de fichier et l'endroit où le sauvegarder
+
+    # On choisit un nom de fichier cohérent
     save_file_name = f"{PIPELINE_NAME}.pkl"
     save_path = TRAINED_MODEL_DIR / save_file_name
-    
-    # Sauvegarde !
+
+    # Sauvegarde avec joblib (format standard pour scikit-learn)
     joblib.dump(pipeline_to_persist, save_path)
 
 
 def run_training() -> None:
-    ## C'est le cœur du script : on lit les données, on entraîne le modèle, et on le sauvegarde.###
-    # Chargement des données d'entraînement
+    """La fonction principale : charge les données, entraîne le modèle, le sauvegarde."""
+    # Étape 1 : Chargement des données d'entraînement
     data = pd.read_csv(TRAINING_DATA_FILE)
 
-    # On sépare les caractéristiques (X) de ce qu'on veut prédire (y)
+    # On sépare les caractéristiques (X) de la cible (y)
     X = data[FEATURES].copy()
     y = data[TARGET]
 
-    # On lance l'entraînement du modèle
+    # On commence par un message dans les logs
+    logger.info("Starting model training")
+
+    # Étape 2 : Entraînement du modèle
     price_pipe.fit(X, y)
 
-    # On garde une copie du modèle entraîné pour plus tard
-    save_pipeline(price_pipe)
+    # Étape 3 : On note la version et on sauvegarde
+    logger.info(f"saving model version: {__version__}")
+    save_pipeline(pipeline_to_persist=price_pipe)
+
+    # Message final de confirmation
+    logger.info("Model trained and saved successfully")
     print("Modèle entraîné et sauvegardé avec succès !")
 
 
-# Si on exécute ce fichier directement, on lance l'entraînement
+# Si on exécute ce fichier directement (et non en l'important), on lance l'entraînement
 if __name__ == "__main__":
     run_training()
