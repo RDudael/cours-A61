@@ -6,54 +6,66 @@ import numpy as np
 import pandas as pd
 
 from regression_model.train_pipeline import (
-    TRAINED_MODEL_DIR,        # Où on a rangé notre modèle
-    TESTING_DATA_FILE,        # Les données de test si on veut vérifier
-    FEATURES,                 # La liste des caractéristiques attendues
+    TRAINED_MODEL_DIR,  # Où est rangé notre modèle
+    FEATURES,           # La liste des caractéristiques que le modèle connaît
 )
-from regression_model.pipeline import PIPELINE_NAME  # Le nom du fichier du modèle
+from regression_model.pipeline import PIPELINE_NAME  # Comment s'appelle notre fichier modèle
+from regression_model.processing.validation import validate_inputs  # Pour vérifier les données
 
 
 def _load_pipeline():
-    ## On Va chercher le modèle entraîné qu'on a sauvegardé précédemment.##
-    # On reconstitue le chemin exact du fichier .pkl
+    
+    ## Récupère notre modèle depuis le fichier où on l'a sauvegardé.##
+    ## C'est comme aller chercher un livre dans une bibliothèque.##
+    
+    # On reconstitue le nom du fichier exact ##
     file_name = f"{PIPELINE_NAME}.pkl"
     pipeline_path = TRAINED_MODEL_DIR / file_name
-    
-    # On charge le modèle depuis le disque
+    # On charge le modèle depuis le disque #
     trained_model = joblib.load(pipeline_path)
     return trained_model
 
 
-def make_prediction(input_data: Union[pd.DataFrame, Dict[str, Any]]) -> Dict[str, np.ndarray]:
+def make_prediction(input_data: Union[pd.DataFrame, Dict[str, Any]]) -> Dict[str, Any]:
     
-    ## La fonction qu'on appelle pour obtenir des prédictions de prix.
+    ## C'est la fonction qu'on appelle quand on veut estimer le prix d'une maison.##
     
-    ## Par exemple : Combien vaut cette maison ? ##
+    ## On peut lui donner :
+    ## - Soit un DataFrame complet (plusieurs maisons)
+   ##  - Soit juste un dictionnaire (une seule maison)
     
-    ## Ce qu'on peut lui donner en entrée :
-    ##- Un DataFrame pandas complet
-    ##- Ou simplement un dictionnaire avec les caractéristiques d'une maison
+    ## Elle nous retourne toujours deux choses :
+    ## - Les prédictions (les prix estimés)
+    ## - La liste des problèmes trouvés dans les données (s'il y en a) ##
     
-    ##Ce qu'elle nous renvoie :
-    ##- Un dictionnaire avec la clé "predictions" contenant les prix estimés ###
-    
-
-    # Si on reçoit un dictionnaire (données d'une seule maison), on le transforme en DataFrame
+    # Étape 0 : On s'assure d'avoir un DataFrame pandas, quel que soit le format d'entrée ##
     if isinstance(input_data, dict):
-        data = pd.DataFrame(input_data)
+        # Si c'est un dictionnaire (une seule maison), on le transforme en DataFrame d'une ligne
+        data = pd.DataFrame([input_data])
     else:
-        # Sinon, on travaille directement sur une copie du DataFrame
+        # Sinon, on travaille sur une copie pour ne pas modifier les données originales
         data = input_data.copy()
 
-    # Important : on ne garde que les colonnes que le modèle connaît
-    # (celles avec lesquelles il a été entraîné)
+    # Étape 1 : Vérification de la qualité des données
+    # Est-ce qu'il manque des colonnes ? Y a-t-il des valeurs vides ?
+    data, errors = validate_inputs(data)
+
+    # Étape 2 : Si on a trouvé des problèmes, on s'arrête là
+    # Pas la peine de donner des données incorrectes au modèle
+    if errors:
+        return {"predictions": None, "errors": errors}
+
+    # Étape 3 : On ne garde que les colonnes que le modèle attend
+    # C'est important pour éviter des erreurs et assurer que le modèle reçoit exactement
+    # ce qu'il a appris à traiter
     data = data[FEATURES]
 
-    # On charge le modèle (s'il n'est pas déjà en mémoire)
+    # Étape 4 : Chargement du modèle et prédiction
+    # On va chercher le modèle (il est chargé une seule fois puis mis en cache)
     pipeline = _load_pipeline()
-    
-    # On demande au modèle de prédire les prix
-    preds = pipeline.predict(data)
+    # On demande au modèle de nous donner ses estimations
+    preds: np.ndarray = pipeline.predict(data)
 
-    # On retourne les résultats dans un format clair
-    return {"predictions": preds}
+    # Étape 5 : On retourne les résultats
+    # Si tout s'est bien passé, "errors" sera un dictionnaire vide
+    return {"predictions": preds, "errors": errors}
