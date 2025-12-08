@@ -1,0 +1,12 @@
+Metadata-Version: 2.4
+Name: regression_model
+Version: 0.1.0
+Summary: Modèle de régression pour prédire le prix des maisons (cours A61)
+Requires-Python: >=3.9
+Requires-Dist: numpy
+Requires-Dist: pandas
+Requires-Dist: scikit-learn
+Requires-Dist: joblib
+Dynamic: requires-dist
+Dynamic: requires-python
+Dynamic: summary

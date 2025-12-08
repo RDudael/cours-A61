@@ -1,0 +1,7 @@
+# requirements
+# api
+flask>=1.0.2
+
+# local regression_model package
+# Chemin ABSOLU vers ton package regression_model
+-e "C:\Users\ryvel\OneDrive\Bureau\IA\cours-A61\cours-A61\packages\regression_model"
