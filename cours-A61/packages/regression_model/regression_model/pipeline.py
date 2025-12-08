@@ -1,5 +1,4 @@
 ## regression_model/pipeline.py ##
-
 from sklearn.pipeline import Pipeline
 from sklearn.linear_model import Lasso
 

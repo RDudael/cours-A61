@@ -3,6 +3,7 @@ setup.py
 regression_model/VERSION.txt
 regression_model/__init__.py
 regression_model/errors.py
+regression_model/logging_config.py
 regression_model/pipeline.py
 regression_model/predict.py
 regression_model/train_pipeline.py
