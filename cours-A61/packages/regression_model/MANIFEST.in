@@ -1,0 +1,3 @@
+include regression_model/VERSION.txt
+recursive-include regression_model/datasets *.csv
+recursive-include regression_model/trained_models *.pkl
