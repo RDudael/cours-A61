@@ -1,5 +1,6 @@
 # ml_api/api/controller.py
 
+from api.validation import PredictionResultSchema
 from flask import Blueprint, request, jsonify
 from regression_model.predict import make_prediction  # Notre fonction de prédiction
 
