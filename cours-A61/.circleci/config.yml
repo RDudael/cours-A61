@@ -1,0 +1,25 @@
+version: 2.1
+
+jobs:
+  test_regression_model:
+    docker:
+      - image: cimg/python:3.9
+    working_directory: ~/project
+    steps:
+      - checkout
+
+      - run:
+          name: Install dependencies
+          command: |
+            pip install --upgrade pip
+            pip install -r requirements.txt
+
+      - run:
+          name: Run tests
+          command: |
+            pytest
+
+workflows:
+  test-all:
+    jobs:
+      - test_regression_model
