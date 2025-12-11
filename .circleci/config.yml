@@ -3,23 +3,61 @@ version: 2.1
 jobs:
   test_regression_model:
     docker:
-      - image: cimg/python:3.9
-    working_directory: ~/project
+      - image: cimg/python:3.9  # Image Python 3.9 officielle de CircleCI
+
+    # On se positionne dans le dossier du cours A61
+    working_directory: ~/project/cours-A61
+
     steps:
-      - checkout
+      - checkout  # Récupère le code depuis Git
 
       - run:
-          name: Install dependencies
+          name: Vérifier la structure du projet
           command: |
-            pip install --upgrade pip
-            pip install -r requirements.txt
+            # Affichage de l'arborescence pour s'assurer que tout est bien placé
+            echo "Répertoire courant :"
+            pwd
+            echo "Contenu du répertoire :"
+            ls
+            echo "Contenu du dossier packages :"
+            ls packages
+            echo "Contenu du dossier scripts :"
+            ls scripts
 
       - run:
-          name: Run tests
+          name: Mettre à jour pip
           command: |
-            pytest
+            # Toujours mettre pip à jour pour éviter les problèmes de compatibilité
+            python -m pip install --upgrade pip
+
+      - run:
+          name: Installation des dépendances du modèle
+          command: |
+            # Installation des bibliothèques nécessaires pour le modèle de régression
+            pip install -r packages/regression_model/requirements.txt
+            # Installation en mode développement pour pouvoir l'importer facilement
+            pip install -e packages/regression_model
+
+      - run:
+          name: Téléchargement des données depuis Kaggle
+          command: |
+            # Rendre le script exécutable et le lancer
+            chmod +x scripts/fetch_kaggle_dataset.sh
+            ./scripts/fetch_kaggle_dataset.sh
+
+      - run:
+          name: Entraînement du modèle
+          command: |
+            # Lancement de l'entraînement du pipeline
+            python -m regression_model.train_pipeline
+
+      - run:
+          name: Exécution des tests unitaires
+          command: |
+            # Lancement des tests du modèle en mode silencieux
+            pytest -q packages/regression_model/tests
 
 workflows:
   test-all:
     jobs:
-      - test_regression_model
+      - test_regression_model  # Notre unique job pour le moment
