@@ -25,17 +25,23 @@ jobs:
             ls cours-A61
 
       # Étape 3 : Configuration de l'environnement Python
+            
       - run:
           name: Installation des dépendances nécessaires
           command: |
-            # On se positionne dans le dossier du cours
             cd cours-A61
-            # Mise à jour de pip pour éviter les problèmes de compatibilité
+            # Mise à jour de pip
             python -m pip install --upgrade pip
-            # Installation des bibliothèques pour le modèle de régression
+
+            # Installation des dépendances du modèle de régression
             python -m pip install -r packages/regression_model/requirements.txt
-            # Installation des bibliothèques pour l'API Flask
+
+            # Installation du package regression_model en mode editable (local)
+            python -m pip install -e packages/regression_model
+
+            # Installation des dépendances de l’API Flask
             python -m pip install -r packages/ml_api/requirements.txt
+      
 
       # Étape 4 : Configuration de l'accès à Kaggle
       - run:
@@ -58,22 +64,28 @@ jobs:
             # Exécution du script qui récupère le dataset House Prices
             cd cours-A61
             bash scripts/fetch_kaggle_dataset.sh
+            
 
-      # Étape 6 : Entraînement du modèle de machine learning
+      # Étape 6 : Entraînement du modèle de machine learning         
       - run:
           name: Création du modèle entraîné
           command: |
             cd cours-A61
-            # Lancement du script d'entraînement principal
-            python packages/regression_model/regression_model/train_pipeline.py
+            # On ajoute le dossier "packages" au PYTHONPATH pour que "regression_model" soit importable
+            export PYTHONPATH="$PYTHONPATH:$(pwd)/packages"
+
+            # On lance le pipeline d'entraînement en tant que module installé
+            python -m regression_model.train_pipeline
+     
 
       # Étape 7 : Vérification par les tests automatisés
       - run:
           name: Exécution des tests de validation
           command: |
             cd cours-A61
-            # Lancement de tous les tests en mode silencieux
+            export PYTHONPATH="$PYTHONPATH:$(pwd)/packages"
             pytest -q
+
 
       # Étape 8 : Archivage des artefacts produits
       - store_artifacts:
