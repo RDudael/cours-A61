@@ -3,61 +3,68 @@ version: 2.1
 jobs:
   test_regression_model:
     docker:
-      - image: cimg/python:3.9  # Image Python 3.9 officielle de CircleCI
-
-    # On se positionne dans le dossier du cours A61
-    working_directory: ~/project/cours-A61
+      - image: cimg/python:3.9  # Image Python 3.9 standard
 
     steps:
-      - checkout  # Récupère le code depuis Git
+      - checkout  # Récupère tout le code du dépôt Git
 
       - run:
-          name: Vérifier la structure du projet
+          name: Exploration de la structure du projet
           command: |
-            # Affichage de l'arborescence pour s'assurer que tout est bien placé
-            echo "Répertoire courant :"
+            # Phase de diagnostic : on vérifie où on est et ce qu'il y a autour
+            echo "Nous sommes à la racine du dépôt Git :"
             pwd
-            echo "Contenu du répertoire :"
+            echo "Voici ce qu'il y a ici :"
             ls
-            echo "Contenu du dossier packages :"
+            echo "-----------------------------"
+            echo "Maintenant, on se déplace dans le dossier du cours A61"
+            cd cours-A61
+            echo "Nous sommes maintenant ici :"
+            pwd
+            echo "Contenu du dossier cours-A61 :"
+            ls
+            echo "Et plus précisément, voici les packages disponibles :"
             ls packages
-            echo "Contenu du dossier scripts :"
-            ls scripts
 
       - run:
-          name: Mettre à jour pip
+          name: Mise en place de l'environnement Python
           command: |
-            # Toujours mettre pip à jour pour éviter les problèmes de compatibilité
-            python -m pip install --upgrade pip
-
-      - run:
-          name: Installation des dépendances du modèle
-          command: |
-            # Installation des bibliothèques nécessaires pour le modèle de régression
+            # On se positionne dans le bon dossier
+            cd cours-A61
+            # Mise à jour de pip (toujours une bonne pratique)
+            pip install --upgrade pip
+            # Installation des dépendances listées dans requirements.txt
             pip install -r packages/regression_model/requirements.txt
-            # Installation en mode développement pour pouvoir l'importer facilement
+            # Installation du package en mode développement
+            # Cela permet de le modifier sans devoir le réinstaller
             pip install -e packages/regression_model
 
       - run:
-          name: Téléchargement des données depuis Kaggle
+          name: Récupération des données d'entraînement
           command: |
-            # Rendre le script exécutable et le lancer
-            chmod +x scripts/fetch_kaggle_dataset.sh
-            ./scripts/fetch_kaggle_dataset.sh
+            # On se replace dans le dossier du cours
+            cd cours-A61
+            # Exécution du script qui va chercher les données sur Kaggle
+            bash scripts/fetch_kaggle_dataset.sh
 
       - run:
-          name: Entraînement du modèle
+          name: Entraînement du modèle de régression
           command: |
-            # Lancement de l'entraînement du pipeline
+            # Toujours dans le dossier du cours
+            cd cours-A61
+            # Lancement du script d'entraînement principal
+            # Cela va créer le fichier .pkl (l'artefact du modèle)
             python -m regression_model.train_pipeline
 
       - run:
-          name: Exécution des tests unitaires
+          name: Vérification par les tests unitaires
           command: |
-            # Lancement des tests du modèle en mode silencieux
-            pytest -q packages/regression_model/tests
+            # On se déplace dans le dossier du modèle pour lancer les tests
+            cd cours-A61/packages/regression_model
+            # Exécution des tests en mode silencieux (seulement le résultat)
+            pytest -q
 
 workflows:
   test-all:
     jobs:
-      - test_regression_model  # Notre unique job pour le moment
+      - test_regression_model  # Notre pipeline de test principal
