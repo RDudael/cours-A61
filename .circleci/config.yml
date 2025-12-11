@@ -1,64 +1,91 @@
+version: 2.1
+
 jobs:
   test_regression_model:
     docker:
+      # Utilisation d'une image Python 3.9 standard
       - image: cimg/python:3.9
+
     steps:
-      - checkout  # Téléchargement du code source depuis Git
+      # Étape 1 : Récupération du code source depuis le dépôt Git
+      - checkout
 
+      # Étape 2 : Diagnostic de la structure du projet
       - run:
-          name: Explorer l'organisation du projet
+          name: Analyse de l'arborescence du projet
           command: |
-            # Vérification de la structure des dossiers
-            # ...
-      
-      - run:
-          name: Préparation de l'environnement Python
-          command: |
-            # Mise à jour de pip et installation des dépendances du projet
-            pip install --upgrade pip
-            pip install -r cours-A61/packages/regression_model/requirements.txt
+            # Affichage du chemin courant pour comprendre où on se trouve
+            echo "Répertoire courant :"
+            pwd
+            # Liste des éléments à la racine du projet
+            echo "Contenu du répertoire :"
+            ls
+            # Focus sur le dossier spécifique du cours A61
+            echo "Contenu du dossier cours-A61 :"
+            ls cours-A61
 
-      # ÉTAPE CRUCIALE : Installation et configuration de Kaggle
+      # Étape 3 : Configuration de l'environnement Python
       - run:
-          name: Configuration de l'outil Kaggle pour télécharger les données
+          name: Installation des dépendances nécessaires
           command: |
-            # Installation de la ligne de commande Kaggle
-            pip install --no-cache-dir kaggle
+            # On se positionne dans le dossier du cours
+            cd cours-A61
+            # Mise à jour de pip pour éviter les problèmes de compatibilité
+            python -m pip install --upgrade pip
+            # Installation des bibliothèques pour le modèle de régression
+            python -m pip install -r packages/regression_model/requirements.txt
+            # Installation des bibliothèques pour l'API Flask
+            python -m pip install -r packages/ml_api/requirements.txt
+
+      # Étape 4 : Configuration de l'accès à Kaggle
+      - run:
+          name: Préparation de l'outil Kaggle pour télécharger les données
+          command: |
+            # Installation de l'interface en ligne de commande de Kaggle
+            python -m pip install --no-cache-dir kaggle
 
             # Création du fichier de configuration Kaggle
-            # Les identifiants sont récupérés depuis les variables CircleCI
+            # Les identifiants sont fournis par les variables d'environnement CircleCI
             mkdir -p ~/.kaggle
             echo "{\"username\":\"$KAGGLE_USERNAME\",\"key\":\"$KAGGLE_KEY\"}" > ~/.kaggle/kaggle.json
-            # Sécurité : restriction des permissions sur le fichier contenant les clés
+            # Protection du fichier contenant les clés d'API
             chmod 600 ~/.kaggle/kaggle.json
 
+      # Étape 5 : Acquisition du jeu de données
       - run:
-          name: Acquisition du dataset depuis Kaggle
+          name: Téléchargement des données depuis Kaggle
           command: |
-            # Exécution du script qui télécharge les données
+            # Exécution du script qui récupère le dataset House Prices
             cd cours-A61
             bash scripts/fetch_kaggle_dataset.sh
 
-      # entraînement du modèle, exécution des tests, gestion des artefacts
-
+      # Étape 6 : Entraînement du modèle de machine learning
       - run:
-          name: Entraînement du modèle de régression
+          name: Création du modèle entraîné
           command: |
-            # Toujours dans le dossier du cours
             cd cours-A61
             # Lancement du script d'entraînement principal
-            # Cela va créer le fichier .pkl (l'artefact du modèle)
-            python -m regression_model.train_pipeline
+            python packages/regression_model/regression_model/train_pipeline.py
 
+      # Étape 7 : Vérification par les tests automatisés
       - run:
-          name: Vérification par les tests unitaires
+          name: Exécution des tests de validation
           command: |
-            # On se déplace dans le dossier du modèle pour lancer les tests
-            cd cours-A61/packages/regression_model
-            # Exécution des tests en mode silencieux (seulement le résultat)
+            cd cours-A61
+            # Lancement de tous les tests en mode silencieux
             pytest -q
 
+      # Étape 8 : Archivage des artefacts produits
+      - store_artifacts:
+          # Chemin vers les modèles entraînés (fichiers .pkl)
+          path: cours-A61/packages/regression_model/regression_model/trained_models
+          # Nom du dossier dans l'interface CircleCI
+          destination: trained_models
+
+# Définition du workflow principal
 workflows:
+  version: 2
   test-all:
     jobs:
-      - test_regression_model  # Notre pipeline de test principal
+      # Notre unique job pour le moment : tester tout le pipeline
+      - test_regression_model
