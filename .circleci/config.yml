@@ -83,7 +83,8 @@ jobs:
           name: Exécution des tests de validation
           command: |
             cd cours-A61
-            export PYTHONPATH="$PYTHONPATH:$(pwd)/packages"
+            # On ajoute "packages" (pour regression_model) et "packages/ml_api" (pour l'API Flask)
+            export PYTHONPATH="$PYTHONPATH:$(pwd)/packages:$(pwd)/packages/ml_api"
             pytest -q
 
 
