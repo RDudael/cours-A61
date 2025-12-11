@@ -1,51 +1,45 @@
-version: 2.1
-
 jobs:
   test_regression_model:
     docker:
-      - image: cimg/python:3.9  # Image Python 3.9 standard
-
+      - image: cimg/python:3.9
     steps:
-      - checkout  # Récupère tout le code du dépôt Git
+      - checkout  # Téléchargement du code source depuis Git
 
       - run:
-          name: Exploration de la structure du projet
+          name: Explorer l'organisation du projet
           command: |
-            # Phase de diagnostic : on vérifie où on est et ce qu'il y a autour
-            echo "Nous sommes à la racine du dépôt Git :"
-            pwd
-            echo "Voici ce qu'il y a ici :"
-            ls
-            echo "-----------------------------"
-            echo "Maintenant, on se déplace dans le dossier du cours A61"
-            cd cours-A61
-            echo "Nous sommes maintenant ici :"
-            pwd
-            echo "Contenu du dossier cours-A61 :"
-            ls
-            echo "Et plus précisément, voici les packages disponibles :"
-            ls packages
-
+            # Vérification de la structure des dossiers
+            # ...
+      
       - run:
-          name: Mise en place de l'environnement Python
+          name: Préparation de l'environnement Python
           command: |
-            # On se positionne dans le bon dossier
-            cd cours-A61
-            # Mise à jour de pip (toujours une bonne pratique)
+            # Mise à jour de pip et installation des dépendances du projet
             pip install --upgrade pip
-            # Installation des dépendances listées dans requirements.txt
-            pip install -r packages/regression_model/requirements.txt
-            # Installation du package en mode développement
-            # Cela permet de le modifier sans devoir le réinstaller
-            pip install -e packages/regression_model
+            pip install -r cours-A61/packages/regression_model/requirements.txt
+
+      # ÉTAPE CRUCIALE : Installation et configuration de Kaggle
+      - run:
+          name: Configuration de l'outil Kaggle pour télécharger les données
+          command: |
+            # Installation de la ligne de commande Kaggle
+            pip install --no-cache-dir kaggle
+
+            # Création du fichier de configuration Kaggle
+            # Les identifiants sont récupérés depuis les variables CircleCI
+            mkdir -p ~/.kaggle
+            echo "{\"username\":\"$KAGGLE_USERNAME\",\"key\":\"$KAGGLE_KEY\"}" > ~/.kaggle/kaggle.json
+            # Sécurité : restriction des permissions sur le fichier contenant les clés
+            chmod 600 ~/.kaggle/kaggle.json
 
       - run:
-          name: Récupération des données d'entraînement
+          name: Acquisition du dataset depuis Kaggle
           command: |
-            # On se replace dans le dossier du cours
+            # Exécution du script qui télécharge les données
             cd cours-A61
-            # Exécution du script qui va chercher les données sur Kaggle
             bash scripts/fetch_kaggle_dataset.sh
+
+      # entraînement du modèle, exécution des tests, gestion des artefacts
 
       - run:
           name: Entraînement du modèle de régression
