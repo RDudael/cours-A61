@@ -5,8 +5,5 @@ flask>=1.0.2
 # tests
 pytest>=7.0
 
-# local regression_model package
-# Chemin RELATIF vers le package regression_model
--e ../regression_model
 
 marshmallow>=3.0.0,<4.0.0
