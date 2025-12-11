@@ -110,8 +110,14 @@ def make_prediction(input_data: Union[pd.DataFrame, Dict[str, Any], list]) -> Di
         errors = None
 
     # Étape 8 : Retour du résultat
-    return {
-        "predictions": preds.tolist(),  # Conversion en liste pour la sérialisation JSON
-        "errors": errors,               # None si tout s'est bien passé
-        "version": __version__,         # Pour tracer l'origine des prédictions
+    # Si aucune erreur n’a été remontée par la validation,
+    # on renvoie un dict vide plutôt que None (pour satisfaire les tests)
+    if errors is None:
+        errors = {}
+
+    result = {
+        "predictions": predictions,
+        "version": _version,
+        "errors": errors,
     }
+    return result
